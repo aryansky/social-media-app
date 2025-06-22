@@ -1,15 +1,81 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String        @id @default(uuid())
+  username    String        @unique
+  password    String
+  email       String        @unique
+  posts       Post[]
+  following   Follow[]      @relation("follower") // This relation actually returns all the people user is following
+  follower    Follow[]      @relation("following") // This relation actually returns all the followers of user
+  Comment     Comment[]
+  CommentVote CommentVote[]
+}
+
+model Post {
+  id        String    @id @default(uuid())
+  user      User      @relation(fields: [userId], references: [id])
+  userId    String
+  title     String
+  content   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Comment   Comment[]
+  PostTags  PostTag[]
+}
+
+model Follow {
+  follower    User   @relation("follower", fields: [followerId], references: [id])
+  followerId  String
+  following   User   @relation("following", fields: [followingId], references: [id])
+  followingId String
+
+  @@id([followerId, followingId])
+}
+
+model Comment {
+  id              String        @id @default(uuid())
+  user            User          @relation(fields: [userId], references: [id])
+  userId          String
+  post            Post          @relation(fields: [postId], references: [id])
+  postId          String
+  parent          Comment?      @relation("CommentToReplies", fields: [parentCommentId], references: [id])
+  parentCommentId String?
+  replies         Comment[]     @relation("CommentToReplies")
+  content         String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  CommentVote     CommentVote[]
+}
+
+model Tag {
+  id       String    @id @default(uuid())
+  label    String    @unique
+  PostTags PostTag[]
+}
+
+model PostTag {
+  post   Post   @relation(fields: [postId], references: [id])
+  postId String
+  tag    Tag    @relation(fields: [tagId], references: [id])
+  tagId  String
+
+  @@id([postId, tagId])
+}
+
+model CommentVote {
+  user      User    @relation(fields: [userId], references: [id])
+  userId    String
+  comment   Comment @relation(fields: [commentId], references: [id])
+  commentId String
+  vote      Int
+
+  @@unique([userId, commentId])
 }
