@@ -3,7 +3,6 @@ import LocalStrategy from "passport-local";
 import passport from "passport";
 import { Profile, VerifyCallback } from "passport-google-oauth20";
 import { prisma } from "../utils/prisma";
-import { User } from "@prisma/client";
 
 passport.use(
   new GoogleStrategy.Strategy(
@@ -26,7 +25,7 @@ passport.use(
       });
 
       if (foundUser) {
-        return cb(null, foundUser);
+        return cb(null, { id: foundUser.userId });
       } else {
         const user = await prisma.user.create({
           data: {
@@ -41,6 +40,7 @@ passport.use(
             providerId: profile.id,
           },
         });
+        return cb(null, user);
       }
     }
   )
@@ -63,23 +63,25 @@ passport.use(
 //   })
 // );
 
-passport.serializeUser(function (user: any, cb) {
+passport.serializeUser(function (
+  user,
+  cb: (err: any, user: Express.User) => void
+) {
   process.nextTick(function () {
-    cb(null, { userId: user.userId });
+    cb(null, { id: user.id });
   });
 });
 
-passport.deserializeUser(function (user: any, cb) {
+passport.deserializeUser(function (user: Express.User, cb) {
   process.nextTick(async function () {
     const foundUser = await prisma.user.findFirst({
       where: {
-        id: user.userId,
+        id: user.id,
       },
       include: {
         accounts: true,
       },
     });
-    console.log(foundUser);
     return cb(null, foundUser);
   });
 });

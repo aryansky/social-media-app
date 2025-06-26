@@ -1,10 +1,17 @@
-import express from "express";
+import express, {
+  ErrorRequestHandler,
+  NextFunction,
+  Request,
+  Response,
+} from "express";
 import session from "express-session";
 import cors from "cors";
 import passport from "passport";
 import { authRoutes } from "./routes/auth";
 import { createClient } from "redis";
 import { RedisStore } from "connect-redis";
+import { postRoutes } from "./routes/post";
+import { commentRoutes } from "./routes/comment";
 require("dotenv").config();
 
 const PORT = process.env.PORT;
@@ -47,7 +54,10 @@ app.use(
 
 app.use(passport.initialize());
 app.use(passport.session());
+
 app.use("/", authRoutes);
+app.use("/posts", postRoutes);
+app.use("/comments", commentRoutes);
 
 app.get("/", (req, res) => {
   if (req.isAuthenticated()) {
@@ -60,6 +70,24 @@ app.get("/", (req, res) => {
     });
   }
 });
+
+app.use(
+  (
+    err: Error & { statusCode?: number },
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { statusCode = 500 } = err;
+    if (!err.message || typeof err.message !== "string")
+      err.message = "Oh no, something went wrong";
+    res.status(statusCode).json({
+      status: "error",
+      message: err.message,
+      error: err,
+    });
+  }
+);
 
 app.listen(PORT, () => {
   console.log(`Strated listening on PORT ${PORT}`);

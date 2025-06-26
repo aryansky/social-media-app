@@ -9,7 +9,8 @@ datasource db {
 
 model User {
   id           String        @id @default(uuid())
-  username     String
+  username     String        @unique
+  displayName  String
   email        String        @unique
   posts        Post[]
   following    Follow[]      @relation("follower") // This relation actually returns all the people user is following
@@ -27,6 +28,8 @@ model Account {
   provider   String
   providerId String
   password   String?
+
+  @@unique([provider, providerId])
 }
 
 model Post {
