@@ -1,34 +1,43 @@
-import { Request, Response, Router } from "express";
+import { Router } from "express";
 import "../auth/passport";
 import passport from "passport";
 import { isAuthenticated } from "../middlewares/isAuthenticated";
+import { createNewUser } from "../controllers/auth";
 
 const authRoutes = Router();
 
+// prefix url: /auth
+
 authRoutes.get(
-  "/auth/google",
-  passport.authenticate("google", {
-    scope: ["profile", "email"],
-  })
+    "/google",
+    passport.authenticate("google", {
+        scope: ["profile", "email"],
+    })
 );
 
 authRoutes.get(
-  "/auth/google/callback",
-  passport.authenticate("google", {
-    failureRedirect: process.env.FRONTENDLOGINPAGE || "/",
-    successRedirect: process.env.FRONTENDDASHBOARD || "/",
-  })
+    "/google/callback",
+    passport.authenticate("google", {
+        failureRedirect: process.env.FRONTENDLOGINPAGE || "/",
+        successRedirect: process.env.FRONTENDDASHBOARD || "/",
+    })
 );
 
-authRoutes.post("/auth/logout", isAuthenticated, async (req, res, next) => {
-  req.logout((err) => {
-    if (err) return next(err);
-    res.redirect("/");
-  });
+authRoutes.post("/logout", isAuthenticated, async (req, res, next) => {
+    req.logout((err) => {
+        if (err) return next(err);
+        res.redirect("/");
+    });
 });
 
-// authRoutes.get("/auth/credentials", (req: Request, res: Response) => {
-//   // code
-// });
+authRoutes.post(
+    "/credentials",
+    passport.authenticate("local", {
+        failureRedirect: process.env.FRONTENDLOGINPAGE || "/",
+        successRedirect: process.env.FRONTENDDASHBOARD || "/",
+    })
+);
+
+authRoutes.post("/signup", createNewUser);
 
 export { authRoutes };
