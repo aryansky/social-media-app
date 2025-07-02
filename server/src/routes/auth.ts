@@ -33,7 +33,7 @@ authRoutes.post("/logout", isAuthenticated, async (req, res, next) => {
 authRoutes.post(
     "/credentials",
     passport.authenticate("local", {
-        failureRedirect: process.env.FRONTENDLOGINPAGE || "/",
+        failureRedirect: process.env.FRONTENDLOGINPAGE || "/fail",
         successRedirect: process.env.FRONTENDDASHBOARD || "/",
     })
 );

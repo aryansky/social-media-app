@@ -53,34 +53,41 @@ passport.use(
 );
 
 passport.use(
-    new LocalStrategy.Strategy(async function (username, password, done) {
-        try {
-            const foundUser = await prisma.user.findUnique({
-                where: { username },
-            });
-            if (!foundUser) return done(null, false);
+    new LocalStrategy.Strategy(
+        {
+            usernameField: "username",
+            passwordField: "password",
+        },
+        async function (username, password, done) {
+            try {
+                console.log("made it to the passport-local handler");
+                const foundUser = await prisma.user.findUnique({
+                    where: { username },
+                });
+                if (!foundUser) return done(null, false);
 
-            const credentialsInfo = await prisma.account.findFirst({
-                where: {
-                    userId: foundUser.id,
-                    provider: "credentials",
-                },
-            });
+                const credentialsInfo = await prisma.account.findFirst({
+                    where: {
+                        userId: foundUser.id,
+                        provider: "credentials",
+                    },
+                });
 
-            if (!credentialsInfo?.password) return done(null, false);
+                if (!credentialsInfo?.password) return done(null, false);
 
-            const passwordResult = await bcrypt.compare(
-                password,
-                credentialsInfo.password
-            );
+                const passwordResult = await bcrypt.compare(
+                    password,
+                    credentialsInfo.password
+                );
 
-            if (!passwordResult) return done(null, false);
+                if (!passwordResult) return done(null, false);
 
-            return done(null, { id: foundUser.id });
-        } catch (err) {
-            return done(err);
+                return done(null, { id: foundUser.id });
+            } catch (err) {
+                return done(err);
+            }
         }
-    })
+    )
 );
 
 passport.serializeUser(function (

@@ -55,7 +55,7 @@ app.use(passport.session());
 app.use("/auth", authRoutes);
 app.use("/posts", postRoutes);
 app.use("/comments", commentRoutes);
-app.use("/:userId", followRoutes);
+app.use("/", followRoutes);
 app.use("/tags", tagRoutes);
 
 app.get("/", (req, res) => {

@@ -5,13 +5,23 @@ import { AppError } from "../utils/AppError";
 
 const getUserFollowing = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
-        const { userId } = req.params;
         const user = await prisma.user.findUnique({
             where: {
-                id: userId,
+                id: req.user!.id,
             },
-            include: {
-                following: true,
+            select: {
+                username: true,
+                following: {
+                    select: {
+                        following: {
+                            select: {
+                                id: true,
+                                username: true,
+                                displayName: true,
+                            },
+                        },
+                    },
+                },
             },
         });
         if (!user) {
@@ -19,19 +29,29 @@ const getUserFollowing = catchAsync(
         }
         res.json({
             username: user.username,
-            following: user.following,
+            following: user.following.map((f) => f.following),
         });
     }
 );
 const getUserFollowers = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
-        const { userId } = req.params;
         const user = await prisma.user.findUnique({
             where: {
-                id: userId,
+                id: req.user!.id,
             },
-            include: {
-                follower: true,
+            select: {
+                username: true,
+                follower: {
+                    select: {
+                        follower: {
+                            select: {
+                                id: true,
+                                username: true,
+                                displayName: true,
+                            },
+                        },
+                    },
+                },
             },
         });
         if (!user) {
@@ -39,7 +59,7 @@ const getUserFollowers = catchAsync(
         }
         res.json({
             username: user.username,
-            followers: user.follower,
+            followers: user.follower.map((f) => f.follower),
         });
     }
 );

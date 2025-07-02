@@ -1,53 +1,63 @@
 import { prisma } from "./prisma";
 
-export const handlePostTags = async (
-    newPostId: string,
-    responseTags: string[]
-) => {
-    const existingTags = await prisma.tag.findMany();
+export const handlePostTags = async (newPostId: string, responseTags: string[]) => {
+    await prisma.$transaction(async (tx) => {
+        const existingTagLabels = (await tx.tag.findMany({ select: { label: true } })).map(
+            (tag) => tag.label
+        );
 
-    const existingTagLabels = existingTags.map((tag) => tag.label);
+        const newTags = responseTags.filter((tag) => !existingTagLabels.includes(tag));
 
-    const newTags = responseTags.filter((tag) => {
-        return !existingTagLabels.includes(tag);
-    });
+        await tx.tag.createMany({
+            data: newTags.map((tag) => ({ label: tag })),
+            skipDuplicates: true,
+        });
 
-    await prisma.tag.createMany({
-        data: newTags.map((tag) => {
-            return {
-                label: tag,
-            };
-        }),
-        skipDuplicates: true,
-    });
+        const tagsToBeAdded = await tx.tag.findMany({
+            where: {
+                label: {
+                    in: responseTags,
+                },
+            },
+        });
 
-    const allTags = await prisma.tag.findMany();
+        await tx.postTag.deleteMany({
+            where: {
+                postId: newPostId,
+            },
+        });
 
-    await prisma.postTag.createMany({
-        data: allTags
-            .filter((tag) => {
-                return responseTags?.includes(tag.label);
-            })
-            .map((tag) => {
+        await tx.postTag.createMany({
+            data: tagsToBeAdded.map((tag) => {
                 return {
                     postId: newPostId,
                     tagId: tag.id,
                 };
             }),
+        });
     });
 
     const postWithTags = await prisma.post.findUnique({
         where: {
             id: newPostId,
         },
-        include: {
+        select: {
+            id: true,
+            title: true,
+            content: true,
+            createdAt: true,
+            updatedAt: true,
+            user: true,
             postTags: {
-                include: {
+                select: {
                     tag: true,
                 },
             },
         },
     });
 
-    return postWithTags;
+    return {
+        ...postWithTags,
+        postTags: postWithTags?.postTags.map((t) => t.tag),
+    };
 };

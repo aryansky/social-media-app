@@ -9,12 +9,12 @@ import {
 
 const followRoutes = Router();
 
-// prefix url: /:userId
+// prefix url: /
 
 followRoutes.route("/following").get(isAuthenticated, getUserFollowing);
 followRoutes.route("/followers").get(isAuthenticated, getUserFollowers);
 
-followRoutes.route("/follow").post(isAuthenticated, followUser);
-followRoutes.route("/unfollow").post(isAuthenticated, unFollowUser);
+followRoutes.route("/:userId/follow").post(isAuthenticated, followUser);
+followRoutes.route("/:userId/unfollow").post(isAuthenticated, unFollowUser);
 
 export { followRoutes };
